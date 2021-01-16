@@ -15,6 +15,7 @@ fmt='%(asctime)s - %(message)s'
 datefmt='%d-%b-%y %H:%M:%S'
 logging.basicConfig(filename='train.log', level=logging.INFO, format=fmt, datefmt=datefmt)
 
+
 def fit(model, train_dl, epochs, device, criterion, optim, model_path):
     history_loss = []
     model, criterion = model.to(device), criterion.to(device)
@@ -45,16 +46,20 @@ def fit(model, train_dl, epochs, device, criterion, optim, model_path):
 
     return history_loss
 
+
 @click.command()
-@click.argument("intentfile", default="intents.json", type=click.File('rb'), help="The path of your intents.json file")
-@click.argument("out_path", default='model', type=click.Path(), help="The path where you save your models (can be left empty)")
+@click.argument("intentfile", default="intents.json", type=click.File('rb'))
+@click.argument("out_path", default='model', type=click.Path())
 @click.option('--batch_size', '-bs', type=int, default=5, help="Batch size (5 by default)")
 @click.option("--epochs", "-ep", type=int, default=200, help="N of epocs (200 by default)")
 def main(intentfile, out_path, batch_size, epochs):
-    """Function that trains the model and saves it at the corresponding destination"""
+    """Function that trains the model and saves it at the corresponding destination\n
+    INTENTFILE: The path of your intents.json file\n
+    OUT_PATH: The path where you save your models (can be left empty)
+    """
     
     logging.info("Define paths")
-    graph_path = Path('train/graphs')
+    graph_path = Path('graphs')
     if not graph_path.exists():
         graph_path.mkdir()
 
@@ -63,6 +68,7 @@ def main(intentfile, out_path, batch_size, epochs):
     if not model_path.exists():
         model_path.mkdir()
         model_path /= 'chatbot_model_000'
+        last_ver = 0
     else:
         list_files = sorted([f.stem for f in model_path.iterdir()], reverse=True)
         if list_files:
@@ -71,6 +77,7 @@ def main(intentfile, out_path, batch_size, epochs):
             model_path /= f'chatbot_model_{last_ver:03d}'
         else:
             model_path /= 'chatbot_model_000'
+            last_ver = 0
 
     logging.info("Intents.json")
     il = IntentLoader(json.load(intentfile))
@@ -82,7 +89,7 @@ def main(intentfile, out_path, batch_size, epochs):
     train_ds = TensorDataset(torch.Tensor(train_x), torch.Tensor(train_y))
     logging.info(f"N° of documents in dataset: {len(train_ds)}")
 
-    train_dl = DataLoader(train_ds, batch_size=bs)
+    train_dl = DataLoader(train_ds, batch_size=batch_size)
     logging.info(f"N° of batches {len(train_dl)} (batch size {train_dl.batch_size})")
 
     # Model parameters
